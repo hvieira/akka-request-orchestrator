@@ -5,19 +5,23 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.util.Timeout
-import net.hvieira.orchestrator.transactional.TransactionOrchestrator
-import net.hvieira.weather.{WeatherRequest, WeatherResponse}
+import net.hvieira.orchestrator.transactional.{TransactionFlowRequest, TransactionFlowResponse, TransactionOrchestrator}
 
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 object ServiceRoute {
 
-  private implicit val timeout = Timeout(2 seconds)
+  private implicit val timeout = Timeout(5 seconds)
 
   def handleWithTransactionMethod(actorSystem: ActorSystem): Route = {
-    val requestFuture = TransactionOrchestrator.createActor(actorSystem) ? WeatherRequest
-    onSuccess(requestFuture) {
-      case WeatherResponse(data) => complete(data.dummyValue)
+    val requestFuture = TransactionOrchestrator.createActor(actorSystem) ? TransactionFlowRequest
+    onComplete(requestFuture) {
+      case Success(TransactionFlowResponse(data)) => complete(data.toString)
+      case Failure(e) => {
+        e.printStackTrace()
+        complete(e.toString)
+      }
     }
   }
 
@@ -25,7 +29,7 @@ object ServiceRoute {
 
   def createRoute(actorSystem: ActorSystem): Route = {
 
-    pathPrefix("weather") {
+    pathPrefix("orchestrate") {
       path("transaction") {
         get {
           handleWithTransactionMethod(actorSystem)
