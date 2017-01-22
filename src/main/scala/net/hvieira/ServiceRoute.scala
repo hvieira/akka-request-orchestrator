@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.util.Timeout
-import net.hvieira.orchestrator.transactional.{TransactionFlowRequest, TransactionFlowResponse, TransactionOrchestrator}
+import net.hvieira.orchestrator.transactional.{TransactionFlowError, TransactionFlowRequest, TransactionFlowResponse, TransactionOrchestrator}
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -18,6 +18,7 @@ object ServiceRoute {
     val requestFuture = TransactionOrchestrator.createActor(actorSystem) ? TransactionFlowRequest
     onComplete(requestFuture) {
       case Success(TransactionFlowResponse(data)) => complete(data.toString)
+      case Success(TransactionFlowError) => complete("Transaction Flow failed with an error!")
       case Failure(e) => {
         e.printStackTrace()
         complete(e.toString)

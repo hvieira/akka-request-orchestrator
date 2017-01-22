@@ -3,6 +3,7 @@ package net.hvieira.orchestrator.transactional
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import net.hvieira.random.{RandomIntegerProvider, RandomIntegerRequest, RandomIntegerResponse}
 
+import scala.concurrent.duration._
 import scala.util.Success
 
 object TransactionOrchestrator {
@@ -13,24 +14,31 @@ object TransactionOrchestrator {
 
 }
 
-// TODO try using "become" funcionality to handle waiting for concrete responses instead of using the ask pattern
-class TransactionOrchestrator extends Actor {
+class TransactionOrchestrator extends Actor with TimeoutBehavior {
 
   import context.become
 
-  // use a finite state machine sort of solution to handle the futures
+  def handleRandomNumberResponse(originalSender: ActorRef) = {
+
+    def waitingForRandomIntegerResp(originalSender: ActorRef) : Receive = {
+      case RandomIntegerResponse(Success(value)) => {
+       // TODO at this point we need to change state/behavior because otherwise we will receive the timeout message which will cause a dead letter
+        originalSender ! new TransactionFlowResponse(value)
+      }
+      case BehaviorTimeout => originalSender ! TransactionFlowError
+      case _ => println("An Error occurred while waiting for random integer!!")
+    }
+
+    // TODO extract this to the trait so that you only specify the behavior function and duration
+    sendTimeoutTick(3 seconds)
+    become(waitingForRandomIntegerResp(originalSender))
+  }
+
   def handleRequestWithTransaction(): Unit = {
     val randomNumberHandler = RandomIntegerProvider.createActor(this.context.system)
     randomNumberHandler ! RandomIntegerRequest(1, 3)
 
-    become(waitingForRandomIntegerResp(sender))
-  }
-
-  def waitingForRandomIntegerResp(originalSender: ActorRef) : Receive = {
-    case RandomIntegerResponse(Success(value)) => {
-      originalSender ! new TransactionFlowResponse(value)
-    }
-    case _ => println("An Error occurred while waiting for random integer!!")
+    handleRandomNumberResponse(sender)
   }
 
   override def receive: Receive = {
@@ -43,3 +51,4 @@ class TransactionOrchestrator extends Actor {
 case class TransactionFlowRequest()
 
 case class TransactionFlowResponse(val generatedNum: Int)
+case class TransactionFlowError()
