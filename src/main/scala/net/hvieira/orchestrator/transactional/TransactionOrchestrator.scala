@@ -16,22 +16,23 @@ object TransactionOrchestrator {
 
 class TransactionOrchestrator extends Actor with TimeoutBehavior {
 
-  import context.become
+  import context.unbecome
 
   def handleRandomNumberResponse(originalSender: ActorRef) = {
 
     def waitingForRandomIntegerResp(originalSender: ActorRef) : Receive = {
       case RandomIntegerResponse(Success(value)) => {
-       // TODO at this point we need to change state/behavior because otherwise we will receive the timeout message which will cause a dead letter
         originalSender ! new TransactionFlowResponse(value)
+        // TODO at this point it needs to change state/behavior because otherwise the system will receive the timeout message which will cause a dead letter
+        // temporary fix
+        unbecome()
       }
-      case BehaviorTimeout => originalSender ! TransactionFlowError
       case _ => println("An Error occurred while waiting for random integer!!")
     }
 
-    // TODO extract this to the trait so that you only specify the behavior function and duration
-    sendTimeoutTick(3 seconds)
-    become(waitingForRandomIntegerResp(originalSender))
+    assumeTimeoutableBehavior(3 seconds,
+      waitingForRandomIntegerResp(originalSender),
+      () => originalSender ! TransactionFlowError)
   }
 
   def handleRequestWithTransaction(): Unit = {
