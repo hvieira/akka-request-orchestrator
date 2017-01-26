@@ -14,7 +14,7 @@ object TransactionOrchestrator {
 
 }
 
-class TransactionOrchestrator extends Actor with TimeoutBehavior {
+class TransactionOrchestrator extends Actor with TimeoutableState {
 
   import context.unbecome
 
@@ -30,7 +30,7 @@ class TransactionOrchestrator extends Actor with TimeoutBehavior {
       case _ => println("An Error occurred while waiting for random integer!!")
     }
 
-    assumeTimeoutableBehavior(3 seconds,
+    assumeStateWithTimeout(3 seconds,
       waitingForRandomIntegerResp(originalSender),
       () => originalSender ! TransactionFlowError)
   }
