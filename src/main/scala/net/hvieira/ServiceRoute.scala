@@ -1,6 +1,7 @@
 package net.hvieira
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
@@ -14,10 +15,11 @@ object ServiceRoute {
 
   private implicit val timeout = Timeout(5 seconds)
 
+  // TODO improve this
   def handleWithTransactionMethod(actorSystem: ActorSystem): Route = {
     val requestFuture = TransactionOrchestrator.createActor(actorSystem) ? TransactionFlowRequest
     onComplete(requestFuture) {
-      case Success(TransactionFlowResponse(data)) => complete(data.toString)
+      case Success(TransactionFlowResponse(data)) => complete(HttpResponse(entity = HttpEntity(ContentType(MediaTypes.`text/html`,  HttpCharsets.`UTF-8`), data)))
       case Success(TransactionFlowError) => complete("Transaction Flow failed with an error!")
       case Failure(e) => {
         e.printStackTrace()

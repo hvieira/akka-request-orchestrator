@@ -1,7 +1,9 @@
 package net.hvieira.orchestrator.transactional
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import net.hvieira.actor.TimeoutableState
 import net.hvieira.random.{RandomIntegerProvider, RandomIntegerRequest, RandomIntegerResponse}
+import net.hvieira.searchprovider.{SearchEngineMainPageProvider, SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
 import scala.concurrent.duration._
 import scala.util.Success
@@ -16,17 +18,24 @@ object TransactionOrchestrator {
 
 class TransactionOrchestrator extends Actor with TimeoutableState {
 
-  import context.unbecome
+  def handleSearchEngineResponse(originalSender: ActorRef): State = {
+    case SearchEngineMainPageResponse(Success(html)) => originalSender ! TransactionFlowResponse(html)
+      // TODO there are missing match patterns here specifically for error cases
+  }
 
   def handleRandomNumberResponse(originalSender: ActorRef) = {
 
     def waitingForRandomIntegerResp(originalSender: ActorRef) : Receive = {
       case RandomIntegerResponse(Success(value)) => {
-        originalSender ! new TransactionFlowResponse(value)
-        // TODO at this point it needs to change state/behavior because otherwise the system will receive the timeout message which will cause a dead letter
-        // temporary fix
-        unbecome()
+        println(s"Requesting provider for $value")
+
+        SearchEngineMainPageProvider.createActor(context.system) ! SearchEngineMainPageRequest(value)
+
+        assumeStateWithTimeout(2 seconds,
+          handleSearchEngineResponse(originalSender),
+          () => originalSender ! TransactionFlowError)
       }
+
       case _ => println("An Error occurred while waiting for random integer!!")
     }
 
@@ -51,5 +60,5 @@ class TransactionOrchestrator extends Actor with TimeoutableState {
 
 case class TransactionFlowRequest()
 
-case class TransactionFlowResponse(val generatedNum: Int)
+case class TransactionFlowResponse(val html: String)
 case class TransactionFlowError()
