@@ -7,42 +7,26 @@ import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.util.ByteString
 import net.hvieira.actor.TimeoutableState
 import net.hvieira.searchprovider.SearchEngineMainPageProvider._
-import net.hvieira.searchprovider.SearchEngineMainPageProvider.SearchProvider.SearchProvider
+import net.hvieira.searchprovider.SearchProvider.SearchProvider
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 object SearchEngineMainPageProvider {
 
+  private val LOCATION_HEADER = "Location"
+
   private val props = Props[SearchEngineMainPageProvider]
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
+
   def createChildActor(context: ActorContext) = context.actorOf(props)
 
-  private val LOCATION_HEADER = "Location"
-
-  // TODO perhaps make SearchProvider package protected and move it to another file
-  object SearchProvider extends Enumeration {
-    type SearchProvider = Value
-    val GOOGLE = Value(1)
-    val DUCKDUCKGO = Value(2)
-    val YAHOO = Value(3)
-
-    def fromInt(param: Int) = {
-      SearchProvider.apply(param)
-    }
-
-    def url(param: SearchProvider) = param match {
-      case GOOGLE => "https://google.com"
-      case DUCKDUCKGO => "https://duckduckgo.com"
-      case YAHOO => "https://yahoo.com"
-    }
-  }
-
   case class SearchEngineMainPageRequest(val providerId: Int)
-  case class SearchEngineMainPageResponse(val html: Try[String])
-  case class SearchEngineMainPageError()
 
+  case class SearchEngineMainPageResponse(val html: Try[String])
+
+  case class SearchEngineMainPageError()
 
 }
 
@@ -69,7 +53,7 @@ class SearchEngineMainPageProvider
           .singleRequest(HttpRequest(method = HttpMethods.GET, uri = newLocation))
           .pipeTo(self)
       }
-        // TODO this is not great. I dont want exceptions in code. Better use Try, Either or something like that or reply to sender from here to communicate error
+      // TODO this is not great. I dont want exceptions in code. Better use Try, Either or something like that or reply to sender from here to communicate error
       case None => throw new RuntimeException("Redirection failed because there is no location header in resp")
     }
   }
