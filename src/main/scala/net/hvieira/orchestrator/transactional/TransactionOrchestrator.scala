@@ -2,8 +2,11 @@ package net.hvieira.orchestrator.transactional
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import net.hvieira.actor.TimeoutableState
-import net.hvieira.random.{RandomIntegerProvider, RandomIntegerRequest, RandomIntegerResponse}
-import net.hvieira.searchprovider.{SearchEngineMainPageProvider, SearchEngineMainPageRequest, SearchEngineMainPageResponse}
+import net.hvieira.orchestrator.transactional.TransactionOrchestrator.{TransactionFlowError, TransactionFlowRequest, TransactionFlowResponse}
+import net.hvieira.random.RandomIntegerProvider
+import net.hvieira.random.RandomIntegerProvider.{RandomIntegerRequest, RandomIntegerResponse}
+import net.hvieira.searchprovider.SearchEngineMainPageProvider
+import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
 import scala.concurrent.duration._
 import scala.util.Success
@@ -14,6 +17,9 @@ object TransactionOrchestrator {
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
 
+  case class TransactionFlowRequest()
+  case class TransactionFlowResponse(val html: String)
+  case class TransactionFlowError()
 }
 
 class TransactionOrchestrator extends Actor with TimeoutableState {
@@ -57,8 +63,3 @@ class TransactionOrchestrator extends Actor with TimeoutableState {
     }
   }
 }
-
-case class TransactionFlowRequest()
-
-case class TransactionFlowResponse(val html: String)
-case class TransactionFlowError()

@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.util.ByteString
+import net.hvieira.random.RandomIntegerProvider.{RandomIntegerRequest, RandomIntegerResponse}
 
 import scala.util.{Failure, Success, Try}
 
@@ -12,6 +13,9 @@ object RandomIntegerProvider {
   private val props = Props[RandomIntegerProvider]
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
+
+  case class RandomIntegerRequest(val min: Int, val max: Int)
+  case class RandomIntegerResponse(val number: Try[Int])
 }
 
 class RandomIntegerProvider extends Actor {
@@ -65,8 +69,3 @@ class RandomIntegerProvider extends Actor {
     }
   }
 }
-
-
-case class RandomIntegerRequest(val min: Int, val max: Int)
-
-case class RandomIntegerResponse(val number: Try[Int])

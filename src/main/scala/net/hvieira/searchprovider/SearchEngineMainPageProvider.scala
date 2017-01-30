@@ -6,7 +6,7 @@ import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.util.ByteString
 import net.hvieira.actor.TimeoutableState
-import net.hvieira.searchprovider.SearchEngineMainPageProvider.{LOCATION_HEADER, SearchProvider}
+import net.hvieira.searchprovider.SearchEngineMainPageProvider._
 import net.hvieira.searchprovider.SearchEngineMainPageProvider.SearchProvider.SearchProvider
 
 import scala.concurrent.duration._
@@ -37,6 +37,11 @@ object SearchEngineMainPageProvider {
       case YAHOO => "https://yahoo.com"
     }
   }
+
+  case class SearchEngineMainPageRequest(val providerId: Int)
+  case class SearchEngineMainPageResponse(val html: Try[String])
+  case class SearchEngineMainPageError()
+
 
 }
 
@@ -100,8 +105,3 @@ class SearchEngineMainPageProvider extends Actor with TimeoutableState {
     case SearchEngineMainPageRequest(id) => processRequest(SearchProvider.fromInt(id))
   }
 }
-
-case class SearchEngineMainPageRequest(val providerId: Int)
-case class SearchEngineMainPageResponse(val html: Try[String])
-case class SearchEngineMainPageError()
-

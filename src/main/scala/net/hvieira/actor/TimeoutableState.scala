@@ -17,7 +17,7 @@ trait TimeoutableState extends Actor {
     become(
       successBehavior
         .orElse({
-          case BehaviorTimeout => timeoutFunction
+          case BehaviorTimeout => timeoutFunction()
         })
     )
   }
