@@ -1,6 +1,6 @@
 package net.hvieira.searchprovider
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorContext, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
@@ -17,6 +17,7 @@ object SearchEngineMainPageProvider {
   private val props = Props[SearchEngineMainPageProvider]
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
+  def createChildActor(context: ActorContext) = context.actorOf(props)
 
   private val LOCATION_HEADER = "Location"
 

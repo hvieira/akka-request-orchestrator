@@ -1,6 +1,6 @@
 package net.hvieira.random
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorContext, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
@@ -13,6 +13,7 @@ object RandomIntegerProvider {
   private val props = Props[RandomIntegerProvider]
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
+  def createChildActor(context: ActorContext) = context.actorOf(props)
 
   case class RandomIntegerRequest(val min: Int, val max: Int)
   case class RandomIntegerResponse(val number: Try[Int])

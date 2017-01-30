@@ -35,7 +35,7 @@ class TransactionOrchestrator extends Actor with TimeoutableState {
       case RandomIntegerResponse(Success(value)) => {
         println(s"Requesting provider for $value")
 
-        SearchEngineMainPageProvider.createActor(context.system) ! SearchEngineMainPageRequest(value)
+        SearchEngineMainPageProvider.createChildActor(context) ! SearchEngineMainPageRequest(value)
 
         assumeStateWithTimeout(2 seconds,
           handleSearchEngineResponse(originalSender),
@@ -51,7 +51,7 @@ class TransactionOrchestrator extends Actor with TimeoutableState {
   }
 
   def handleRequestWithTransaction(): Unit = {
-    val randomNumberHandler = RandomIntegerProvider.createActor(this.context.system)
+    val randomNumberHandler = RandomIntegerProvider.createChildActor(context)
     randomNumberHandler ! RandomIntegerRequest(1, 3)
 
     handleRandomNumberResponse(sender)

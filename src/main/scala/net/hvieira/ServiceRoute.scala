@@ -19,7 +19,9 @@ object ServiceRoute {
   def handleWithTransactionMethod(actorSystem: ActorSystem): Route = {
     val requestFuture = TransactionOrchestrator.createActor(actorSystem) ? TransactionFlowRequest
     onComplete(requestFuture) {
-      case Success(TransactionFlowResponse(data)) => complete(HttpResponse(entity = HttpEntity(ContentType(MediaTypes.`text/html`,  HttpCharsets.`UTF-8`), data)))
+      case Success(TransactionFlowResponse(data)) => complete(
+        HttpResponse(
+          entity = HttpEntity(ContentType(MediaTypes.`text/html`, HttpCharsets.`UTF-8`), data)))
       case Success(TransactionFlowError) => complete("Transaction Flow failed with an error!")
       case Failure(e) => {
         // TODO use logs instead
@@ -39,12 +41,12 @@ object ServiceRoute {
         get {
           handleWithTransactionMethod(actorSystem)
         }
-      }~
-      path("fork") {
-        get {
-          handleWithForkMethod(actorSystem)
+      } ~
+        path("fork") {
+          get {
+            handleWithForkMethod(actorSystem)
+          }
         }
-      }
     }
 
   }
