@@ -28,7 +28,7 @@ object ServiceRoute {
       case Success(TransactionFlowResponse(data)) => complete(
         HttpResponse(
           entity = HttpEntity(ContentType(MediaTypes.`text/html`, HttpCharsets.`UTF-8`), data)))
-      case Success(TransactionFlowError) => complete("Transaction Flow failed with an error!")
+      case Success(TransactionFlowError) => complete(HttpResponse(status = StatusCodes.InternalServerError))
       case Failure(e) => {
         // TODO use logs instead
         e.printStackTrace()

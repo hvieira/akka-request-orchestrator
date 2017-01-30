@@ -1,6 +1,6 @@
 package net.hvieira.searchprovider
 
-import akka.actor.{Actor, ActorContext, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
@@ -46,7 +46,10 @@ object SearchEngineMainPageProvider {
 
 }
 
-class SearchEngineMainPageProvider extends Actor with TimeoutableState {
+class SearchEngineMainPageProvider
+  extends Actor
+    with TimeoutableState
+    with ActorLogging {
 
   import akka.pattern.pipe
   import context.dispatcher
@@ -102,8 +105,7 @@ class SearchEngineMainPageProvider extends Actor with TimeoutableState {
   }
 
   override def aroundPostStop(): Unit = {
-    // TODO use logs
-    println(s"Stopping Actor $self")
+    log.info("Stopping...")
     postStop()
   }
 

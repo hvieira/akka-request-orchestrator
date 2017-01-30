@@ -1,6 +1,6 @@
 package net.hvieira.random
 
-import akka.actor.{Actor, ActorContext, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
@@ -21,7 +21,10 @@ object RandomIntegerProvider {
   case class RandomIntegerResponse(val number: Try[Int])
 }
 
-class RandomIntegerProvider extends Actor with TimeoutableState {
+class RandomIntegerProvider
+  extends Actor
+    with TimeoutableState
+    with ActorLogging {
 
   private val SERVICE_BASE_ENDPOINT = "https://www.random.org/integers/"
 
@@ -72,8 +75,7 @@ class RandomIntegerProvider extends Actor with TimeoutableState {
   }
 
   override def aroundPostStop(): Unit = {
-    // TODO use logs
-    println(s"Stopping Actor $self")
+    log.info("Stopping...")
     postStop()
   }
 

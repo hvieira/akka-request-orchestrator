@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 
 object Bootstrap extends App {
 
-  implicit val actorSystem = ActorSystem("my-system")
+  implicit val actorSystem = ActorSystem("service-actor-system")
   // TODO what is this necessary for?
   implicit val actorMaterializer = ActorMaterializer()
   // needed for the future flatMap/onComplete in the end
