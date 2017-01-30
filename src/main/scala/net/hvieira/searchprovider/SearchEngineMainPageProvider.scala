@@ -101,6 +101,12 @@ class SearchEngineMainPageProvider extends Actor with TimeoutableState {
       })
   }
 
+  override def aroundPostStop(): Unit = {
+    // TODO use logs
+    println(s"Stopping Actor $self")
+    postStop()
+  }
+
   override def receive: Receive = {
     case SearchEngineMainPageRequest(id) => processRequest(SearchProvider.fromInt(id))
   }

@@ -61,6 +61,13 @@ class TransactionOrchestrator extends Actor with TimeoutableState {
     handleRandomNumberResponse(sender)
   }
 
+
+  override def aroundPostStop(): Unit = {
+    // TODO use logs
+    println(s"Stopping Actor $self")
+    postStop()
+  }
+
   override def receive: Receive = {
     case TransactionFlowRequest => {
       handleRequestWithTransaction()
