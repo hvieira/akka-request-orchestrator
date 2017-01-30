@@ -42,7 +42,11 @@ class TransactionOrchestrator extends Actor with TimeoutableState {
           () => originalSender ! TransactionFlowError)
       }
 
-      case _ => println("An Error occurred while waiting for random integer!!")
+      case _ => {
+        // TODO use logs instead
+        println("An Error occurred while waiting for random integer!!")
+        originalSender ! TransactionFlowError
+      }
     }
 
     assumeStateWithTimeout(3 seconds,

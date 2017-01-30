@@ -13,12 +13,12 @@ trait TimeoutableState extends Actor {
   private def registerTimeoutTick(timeout: FiniteDuration) = context.system.scheduler.scheduleOnce(timeout, self, BehaviorTimeout)
 
   def assumeStateWithTimeout(timeout: FiniteDuration, successBehavior: State, timeoutFunction: () => Unit) = {
-    registerTimeoutTick(timeout)
+    val timeoutTick = registerTimeoutTick(timeout)
     become(
       successBehavior
-        .orElse({
+        .orElse[Any, Unit]({
           case BehaviorTimeout => timeoutFunction()
-        })
+        }).andThen((Unit) => timeoutTick.cancel())
     )
   }
 

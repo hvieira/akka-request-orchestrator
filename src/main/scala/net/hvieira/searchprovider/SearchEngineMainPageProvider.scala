@@ -56,7 +56,6 @@ class SearchEngineMainPageProvider extends Actor with TimeoutableState {
   val http = Http(context.system)
 
   def handleRedirection(resp: HttpResponse, headers: Seq[HttpHeader]): Unit = {
-    println(headers)
     val headerMap = headers.map(header => (header.name(), header.value())).toMap
 
     resp.discardEntityBytes()
