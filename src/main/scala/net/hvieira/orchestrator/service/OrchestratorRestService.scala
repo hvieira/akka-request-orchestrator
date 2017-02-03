@@ -17,11 +17,15 @@ import scala.util.{Failure, Success}
 class OrchestratorRestService(implicit val system: ActorSystem,
                               implicit val materializer: ActorMaterializer) {
 
+  private val transactionTimeoutDuration = 5 seconds
+
   val route =
     pathPrefix("orchestrate") {
       path("transaction") {
-        get {
-          handleWithTransactionMethod()
+        withRequestTimeout(5 seconds) {
+          get {
+            handleWithTransactionMethod()
+          }
         }
       } ~
         path("fork") {
@@ -34,7 +38,7 @@ class OrchestratorRestService(implicit val system: ActorSystem,
   // TODO check if using an inbox would offer better performance and no blocking
   def handleWithTransactionMethod(): Route = {
 
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout = Timeout(transactionTimeoutDuration)
 
     val actorPerRequest: ActorRef = TransactionOrchestrator.createActor(system)
     val requestFuture = actorPerRequest ? TransactionFlowRequest
