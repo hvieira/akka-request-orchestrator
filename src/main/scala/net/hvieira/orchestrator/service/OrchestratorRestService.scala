@@ -21,7 +21,6 @@ object OrchestratorRestService {
   }
 }
 
-// TODO would this make more sense as an object?
 class OrchestratorRestService(implicit val system: ActorSystem,
                               implicit val materializer: ActorMaterializer) {
 
@@ -45,7 +44,6 @@ class OrchestratorRestService(implicit val system: ActorSystem,
         }
     }
 
-  // TODO check if using an inbox would offer better performance and no blocking
   def handleWithTransactionMethod(): Route = {
 
     implicit val timeout = Timeout(transactionTimeoutDuration)
