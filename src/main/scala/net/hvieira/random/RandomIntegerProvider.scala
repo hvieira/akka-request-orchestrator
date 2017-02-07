@@ -36,7 +36,6 @@ class RandomIntegerProvider
 
   val http = Http(context.system)
 
-  // TODO the request takes a long time. Check if this is something to due with using akka-http
   def waitingForHttpResponse(originalSender: ActorRef): State = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) => {
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>

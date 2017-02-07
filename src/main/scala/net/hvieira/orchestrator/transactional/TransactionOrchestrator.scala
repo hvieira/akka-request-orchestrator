@@ -9,7 +9,7 @@ import net.hvieira.searchprovider.SearchEngineMainPageProvider
 import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
 import scala.concurrent.duration._
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 object TransactionOrchestrator {
 
@@ -32,7 +32,11 @@ class TransactionOrchestrator
 
   def handleSearchEngineResponse(originalSender: ActorRef): State = {
     case SearchEngineMainPageResponse(Success(html)) => originalSender ! TransactionFlowResponse(html)
-    // TODO there are missing match patterns here specifically for error cases
+    case SearchEngineMainPageResponse(Failure(_)) => originalSender ! TransactionFlowError()
+    case _ => {
+      log.error("Received unexpected message type")
+      originalSender ! TransactionFlowError()
+    }
   }
 
   def handleRandomIntegerResp(originalSender: ActorRef): Receive = {

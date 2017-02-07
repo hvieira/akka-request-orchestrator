@@ -9,6 +9,7 @@ import net.hvieira.actor.TimeoutableState
 import net.hvieira.searchprovider.SearchEngineMainPageProvider._
 import net.hvieira.searchprovider.SearchProvider.SearchProvider
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -48,13 +49,11 @@ class SearchEngineMainPageProvider
     resp.discardEntityBytes()
 
     headerMap.get(LOCATION_HEADER) match {
-      case Some(newLocation) => {
-        http
-          .singleRequest(HttpRequest(method = HttpMethods.GET, uri = newLocation))
-          .pipeTo(self)
-      }
-      // TODO this is not great. I dont want exceptions in code. Better use Try, Either or something like that or reply to sender from here to communicate error
-      case None => throw new RuntimeException("Redirection failed because there is no location header in resp")
+      case Some(newLocation) => http
+        .singleRequest(HttpRequest(method = HttpMethods.GET, uri = newLocation))
+        .pipeTo(self)
+
+      case None => Future.successful(HttpResponse(StatusCodes.BadGateway)).pipeTo(self)
     }
   }
 

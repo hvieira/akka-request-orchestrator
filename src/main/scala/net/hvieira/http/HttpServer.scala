@@ -11,7 +11,7 @@ class HttpServer(
                  implicit val system: ActorSystem,
                  implicit val materializer: ActorMaterializer) {
 
-  def startServer(address: String, port: Int, route: Route) = {
+  def start(address: String, port: Int, route: Route) = {
 
     implicit val executor = system.dispatcher
 
