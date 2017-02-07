@@ -8,6 +8,8 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import net.hvieira.orchestrator.fork.ForkOrchestrator
+import net.hvieira.orchestrator.fork.ForkOrchestrator.{ForkFlowRequest, ForkFlowResponse}
 import net.hvieira.orchestrator.transactional.TransactionOrchestrator
 import net.hvieira.orchestrator.transactional.TransactionOrchestrator.{TransactionFlowError, TransactionFlowRequest, TransactionFlowResponse}
 
@@ -27,19 +29,22 @@ class OrchestratorRestService(implicit val system: ActorSystem,
   private val log = Logging(system, this)
 
   private val transactionTimeoutDuration = 5 seconds
+  private val forkTimeoutDuration = 5 seconds
 
   val route =
     pathPrefix("orchestrate") {
       path("transaction") {
-        withRequestTimeout(5 seconds) {
+        withRequestTimeout(transactionTimeoutDuration) {
           get {
             handleWithTransactionMethod()
           }
         }
       } ~
         path("fork") {
-          get {
-            handleWithForkMethod()
+          withRequestTimeout(forkTimeoutDuration) {
+            get {
+              handleWithForkMethod()
+            }
           }
         }
     }
@@ -69,15 +74,35 @@ class OrchestratorRestService(implicit val system: ActorSystem,
         log.error("Failure fulfilling request", e)
         complete(HttpResponse(status = StatusCodes.InternalServerError))
       }
+    }
+  }
+
+  def handleWithForkMethod(): Route = {
+    implicit val timeout = Timeout(forkTimeoutDuration)
+
+    val actorPerRequest: ActorRef = ForkOrchestrator.createActor(system)
+    val requestFuture = actorPerRequest ? ForkFlowRequest
+
+    // on completion terminate actor per request and children
+    requestFuture.onComplete(result => actorPerRequest ! PoisonPill)(system.dispatcher)
+
+    onComplete(requestFuture) {
+
+      case Success(ForkFlowResponse(result)) => complete(
+        HttpResponse(
+          entity = HttpEntity(ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`), result)))
+
+      case Failure(e) => {
+        log.error(e, "Failure fulfilling request")
+        complete(HttpResponse(status = StatusCodes.InternalServerError))
+      }
 
       case _ => {
-        log.error("Unexpected message type. Returning error to the client")
+        log.error("WTF!!!!!!1!!")
         complete(HttpResponse(status = StatusCodes.InternalServerError))
       }
     }
   }
-
-  def handleWithForkMethod(): Route = ???
 
 
 }

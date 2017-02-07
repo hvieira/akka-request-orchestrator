@@ -74,6 +74,7 @@ class SearchEngineMainPageProvider
   }
 
   def processRequest(value: SearchProvider): Unit = {
+    log.info(s"Retrieving page for provider $value")
     val finalUri: Uri = Uri(SearchProvider.url(value))
 
     http
