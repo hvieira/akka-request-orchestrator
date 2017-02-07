@@ -1,14 +1,16 @@
 package net.hvieira.orchestrator.service
 
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.duration._
 
 class OrchestratorRestServiceSpec
   extends WordSpec
     with Matchers
+    with BeforeAndAfterAll
     with ScalatestRouteTest {
 
   val route = new OrchestratorRestService().route
@@ -23,11 +25,13 @@ class OrchestratorRestServiceSpec
       request ~> route ~> check {
         status shouldBe StatusCodes.OK
         handled shouldBe true
-        // TODO inspect the body
-//        entityAs[String] shouldBe "sdgf"
-        // TODO the test results produce some errors in logs. Check them!
+        entityAs[String]  should include regex "Google|DuckDuckGo|Yahoo"
       }
     }
+  }
+
+  override def afterAll(): Unit = {
+    Http().shutdownAllConnectionPools()
   }
 
 }
