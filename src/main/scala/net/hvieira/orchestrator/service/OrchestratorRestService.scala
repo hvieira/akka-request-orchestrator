@@ -71,7 +71,12 @@ class OrchestratorRestService(implicit val system: ActorSystem,
       }
 
       case Failure(e) => {
-        log.error("Failure fulfilling request", e)
+        log.error(e, "Failure fulfilling request")
+        complete(HttpResponse(status = StatusCodes.InternalServerError))
+      }
+
+      case _ => {
+        log.warning("Received unexpected result. Ignoring...")
         complete(HttpResponse(status = StatusCodes.InternalServerError))
       }
     }

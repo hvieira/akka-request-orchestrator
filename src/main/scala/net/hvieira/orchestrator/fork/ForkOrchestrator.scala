@@ -1,13 +1,12 @@
 package net.hvieira.orchestrator.fork
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import akka.pattern.ask
-import akka.pattern.pipe
+import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import net.hvieira.actor.TimeoutableState
 import net.hvieira.orchestrator.fork.ForkOrchestrator.{ForkFlowError, ForkFlowRequest, ForkFlowResponse}
 import net.hvieira.searchprovider.SearchEngineMainPageProvider
-import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageRequest, SearchEngineMainPageResponse}
+import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageError, SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -43,36 +42,54 @@ class ForkOrchestrator
   }
 
   def handleResult(originalSender: ActorRef): State = {
-    case result: String => {
-      log.info(s"FORK RESULT => [$result] to $originalSender")
-      originalSender ! ForkFlowResponse(result)
+
+    case expectedResult: Iterable[Any] => {
+
+      // TODO make the return type of the main page actor to be a String and not a Try. Error response should be used when we can't get an successful http response
+      val errorList = expectedResult.filter {
+        case SearchEngineMainPageError => true
+        case _ => false
+      }
+
+      if (!errorList.isEmpty)
+        originalSender ! ForkFlowError
+      else {
+
+        val result = expectedResult.map {
+          case e: SearchEngineMainPageResponse => e
+        }.map(resp => resp.html)
+          .map {
+            case Success(html) => html
+            case _ => ""
+          }
+          .map(html => "<title>.*<\\/title>".r findFirstIn html)
+          .map {
+            case Some(value) => value
+            case None => ""
+          }
+          .reduce((s1, s2) => s1 + " | " + s2)
+
+        originalSender ! ForkFlowResponse(result)
+      }
     }
   }
+
+  private val pageAskTimeout: FiniteDuration = 2 seconds
 
   override def receive: Receive = {
     case ForkFlowRequest => {
 
-      implicit val timeout = Timeout(2 seconds)
       import context.dispatcher
 
-      val futureList = context.children
+      implicit val timeout = Timeout(pageAskTimeout)
+
+      val requestFutureList = context.children
         .zipWithIndex
-        .map {
-          case (worker, i) => worker ? SearchEngineMainPageRequest(i + 1)
-        }
+        .map(tuple => tuple._1 ? SearchEngineMainPageRequest(tuple._2 + 1))
 
-      val reducedFuture = Future.sequence(futureList)
+      Future.sequence(requestFutureList) pipeTo self
 
-      // TODO might as well just pipe the list of Strings and then compose a proper response from the list
-      reducedFuture.map(list => list.map {
-        case SearchEngineMainPageResponse(Success(html)) => "Google|DuckDuckGo|Yahoo".r findFirstIn html
-      }).map(list => list.map {
-        case Some(value) => value
-        case None => ""
-      }).map(list => list.reduce((s1, s2) => s1 + "||" + s2))
-        .pipeTo(self)
-
-      assumeStateWithTimeout(5 seconds, handleResult(sender), () => sender ! ForkFlowError)
+      assumeStateWithTimeout(pageAskTimeout, handleResult(sender), () => sender ! ForkFlowError)
     }
 
   }

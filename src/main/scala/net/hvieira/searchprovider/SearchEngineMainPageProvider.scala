@@ -68,6 +68,7 @@ class SearchEngineMainPageProvider
     case resp@HttpResponse(StatusCodes.Found, headers, _, _) => handleRedirection(resp, headers)
 
     case resp@HttpResponse(code, _, _, _) => {
+      log.error("Did not get successful response from page request")
       originalSender ! SearchEngineMainPageResponse(Failure(null))
       resp.discardEntityBytes()
     }
