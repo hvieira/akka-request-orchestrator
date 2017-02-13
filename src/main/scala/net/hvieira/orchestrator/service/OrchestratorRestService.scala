@@ -103,7 +103,7 @@ class OrchestratorRestService(implicit val system: ActorSystem,
       }
 
       case _ => {
-        log.error("WTF!!!!!!1!!")
+        log.warning("Received unexpected result. Ignoring...")
         complete(HttpResponse(status = StatusCodes.InternalServerError))
       }
     }
