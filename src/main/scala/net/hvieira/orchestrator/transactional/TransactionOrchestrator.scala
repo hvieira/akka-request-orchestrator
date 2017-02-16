@@ -6,10 +6,9 @@ import net.hvieira.orchestrator.transactional.TransactionOrchestrator.{Transacti
 import net.hvieira.random.RandomIntegerProvider
 import net.hvieira.random.RandomIntegerProvider.{RandomIntegerError, RandomIntegerRequest, RandomIntegerResponse}
 import net.hvieira.searchprovider.SearchEngineMainPageProvider
-import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageRequest, SearchEngineMainPageResponse}
+import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageError, SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 object TransactionOrchestrator {
 
@@ -17,11 +16,11 @@ object TransactionOrchestrator {
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
 
-  case class TransactionFlowRequest()
+  case object TransactionFlowRequest
 
   case class TransactionFlowResponse(val html: String)
 
-  case class TransactionFlowError()
+  case object TransactionFlowError
 
 }
 
@@ -31,11 +30,11 @@ class TransactionOrchestrator
     with ActorLogging {
 
   def handleSearchEngineResponse(originalSender: ActorRef): State = {
-    case SearchEngineMainPageResponse(Success(html)) => originalSender ! TransactionFlowResponse(html)
-    case SearchEngineMainPageResponse(Failure(_)) => originalSender ! TransactionFlowError()
+    case SearchEngineMainPageResponse(html) => originalSender ! TransactionFlowResponse(html)
+    case SearchEngineMainPageError => originalSender ! TransactionFlowError
     case _ => {
       log.error("Received unexpected message type")
-      originalSender ! TransactionFlowError()
+      originalSender ! TransactionFlowError
     }
   }
 

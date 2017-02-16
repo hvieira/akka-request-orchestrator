@@ -25,9 +25,9 @@ object SearchEngineMainPageProvider {
 
   case class SearchEngineMainPageRequest(val providerId: Int)
 
-  case class SearchEngineMainPageResponse(val html: Try[String])
+  case class SearchEngineMainPageResponse(val html: String)
 
-  case class SearchEngineMainPageError()
+  case object SearchEngineMainPageError
 
 }
 
@@ -60,7 +60,7 @@ class SearchEngineMainPageProvider
   def handleHtmlResponse(originalSender: ActorRef): State = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) => {
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
-        originalSender ! SearchEngineMainPageResponse(Success(body.utf8String.trim))
+        originalSender ! SearchEngineMainPageResponse(body.utf8String.trim)
       }
     }
 
@@ -69,7 +69,7 @@ class SearchEngineMainPageProvider
 
     case resp@HttpResponse(code, _, _, _) => {
       log.error("Did not get successful response from page request")
-      originalSender ! SearchEngineMainPageResponse(Failure(null))
+      originalSender ! SearchEngineMainPageError
       resp.discardEntityBytes()
     }
   }

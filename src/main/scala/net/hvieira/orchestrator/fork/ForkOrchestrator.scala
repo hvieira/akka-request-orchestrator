@@ -45,7 +45,6 @@ class ForkOrchestrator
 
     case expectedResult: Iterable[Any] => {
 
-      // TODO make the return type of the main page actor to be a String and not a Try. Error response should be used when we can't get an successful http response
       val errorList = expectedResult.filter {
         case SearchEngineMainPageError => true
         case _ => false
@@ -58,10 +57,6 @@ class ForkOrchestrator
         val result = expectedResult.map {
           case e: SearchEngineMainPageResponse => e
         }.map(resp => resp.html)
-          .map {
-            case Success(html) => html
-            case _ => ""
-          }
           .map(html => "<title>.*<\\/title>".r findFirstIn html)
           .map {
             case Some(value) => value
