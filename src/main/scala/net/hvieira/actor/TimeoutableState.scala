@@ -1,27 +1,27 @@
 package net.hvieira.actor
 
-import akka.actor.Actor
+import akka.actor.{Actor, ReceiveTimeout}
 
 import scala.concurrent.duration._
 
 trait TimeoutableState extends Actor {
 
-  import context.{become, dispatcher}
-
   type State = Actor.Receive
 
-  private def registerTimeoutTick(timeout: FiniteDuration) = context.system.scheduler.scheduleOnce(timeout, self, BehaviorTimeout)
-
   def assumeStateWithTimeout(timeout: FiniteDuration, successBehavior: State, timeoutFunction: () => Unit) = {
-    val timeoutTick = registerTimeoutTick(timeout)
-    become(
+    // this can also be achieved by registering a tick with the actor scheduler to send a timeout message or run a timeout function
+    // see commit logs for the previous version for this
+    registerReceiveTimeout(timeout)
+    context.become(
       successBehavior
         .orElse[Any, Unit]({
-          case BehaviorTimeout => timeoutFunction()
-        }).andThen((Unit) => timeoutTick.cancel())
+          case ReceiveTimeout => timeoutFunction()
+        }).andThen((Unit) => cancelReceiveTimeout)
     )
   }
 
-}
+  private def registerReceiveTimeout(timeout: FiniteDuration): Unit = context.setReceiveTimeout(timeout)
 
-private case class BehaviorTimeout()
+  private def cancelReceiveTimeout: Unit = context.setReceiveTimeout(Duration.Undefined)
+
+}

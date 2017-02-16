@@ -3,22 +3,29 @@ package net.hvieira.random
 import akka.actor.{Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.pattern.pipe
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.util.ByteString
 import net.hvieira.actor.TimeoutableState
-import net.hvieira.random.RandomIntegerProvider.{RandomIntegerRequest, RandomIntegerResponse}
+import net.hvieira.random.RandomIntegerProvider.{RandomIntegerError, RandomIntegerRequest, RandomIntegerResponse, SERVICE_BASE_ENDPOINT}
 
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 
 object RandomIntegerProvider {
+  private val SERVICE_BASE_ENDPOINT = "https://www.random.org/integers/"
+
   private val props = Props[RandomIntegerProvider]
 
   def createActor(actorSystem: ActorSystem) = actorSystem.actorOf(props)
+
   def createChildActor(context: ActorContext) = context.actorOf(props)
 
   case class RandomIntegerRequest(val min: Int, val max: Int)
-  case class RandomIntegerResponse(val number: Try[Int])
+
+  case class RandomIntegerResponse(val number: Int)
+
+  case object RandomIntegerError
+
 }
 
 class RandomIntegerProvider
@@ -26,11 +33,8 @@ class RandomIntegerProvider
     with TimeoutableState
     with ActorLogging {
 
-  private val SERVICE_BASE_ENDPOINT = "https://www.random.org/integers/"
 
-  import akka.pattern.pipe
   import context.dispatcher
-  import context.become
 
   final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
@@ -39,11 +43,12 @@ class RandomIntegerProvider
   def waitingForHttpResponse(originalSender: ActorRef): State = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) => {
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
-        originalSender ! RandomIntegerResponse(Success(Integer.parseInt(body.utf8String.trim)))
+        originalSender ! RandomIntegerResponse(Integer.parseInt(body.utf8String.trim))
       }
     }
     case resp@HttpResponse(code, _, _, _) => {
-      originalSender ! RandomIntegerResponse(Failure(null))
+      log.warning(s"Got a response with unexpected status code $code")
+      originalSender ! RandomIntegerError
       resp.discardEntityBytes()
     }
   }
@@ -66,11 +71,13 @@ class RandomIntegerProvider
       .singleRequest(HttpRequest(method = HttpMethods.GET, uri = finalUri))
       .pipeTo(self)
 
-    become(waitingForHttpResponse(sender))
-    assumeStateWithTimeout(2 seconds,
-      waitingForHttpResponse(sender),
-      () => sender ! RandomIntegerResponse
-    )
+    val originalSender = sender()
+    assumeStateWithTimeout(2000 millis,
+      waitingForHttpResponse(originalSender),
+      () => {
+        log.warning("Timeout while getting a random number")
+        originalSender ! RandomIntegerError
+      })
   }
 
   override def aroundPostStop(): Unit = {

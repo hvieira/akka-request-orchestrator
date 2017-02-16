@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import net.hvieira.actor.TimeoutableState
 import net.hvieira.orchestrator.transactional.TransactionOrchestrator.{TransactionFlowError, TransactionFlowRequest, TransactionFlowResponse}
 import net.hvieira.random.RandomIntegerProvider
-import net.hvieira.random.RandomIntegerProvider.{RandomIntegerRequest, RandomIntegerResponse}
+import net.hvieira.random.RandomIntegerProvider.{RandomIntegerError, RandomIntegerRequest, RandomIntegerResponse}
 import net.hvieira.searchprovider.SearchEngineMainPageProvider
 import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
@@ -40,11 +40,11 @@ class TransactionOrchestrator
   }
 
   def handleRandomIntegerResp(originalSender: ActorRef): Receive = {
-    case RandomIntegerResponse(Success(value)) => {
+    case RandomIntegerResponse(value) => {
       requestSearchProviderMainPage(originalSender, value)
     }
 
-    case _ => {
+    case RandomIntegerError => {
       log.error("An error occurred while waiting for random integer!!")
       originalSender ! TransactionFlowError
     }
