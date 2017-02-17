@@ -19,7 +19,7 @@ class OrchestratorRestServiceSpec
 
     "orchestrate requests in as a transaction" in {
 
-      implicit val explicitTimeout = RouteTestTimeout(5 seconds)
+      implicit val explicitTimeout = RouteTestTimeout(3 seconds)
 
       val request: HttpRequest = Get("/orchestrate/transaction")
       request ~> route ~> check {

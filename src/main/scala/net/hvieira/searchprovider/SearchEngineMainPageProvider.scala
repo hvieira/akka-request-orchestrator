@@ -57,8 +57,9 @@ class SearchEngineMainPageProvider
     }
   }
 
-  def handleHtmlResponse(originalSender: ActorRef): State = {
+  def handleHtmlResponse(requestTimestamp: Long, originalSender: ActorRef): State = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) => {
+      log.info(s"Got main page! Took ${System.currentTimeMillis()-requestTimestamp}")
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
         originalSender ! SearchEngineMainPageResponse(body.utf8String.trim)
       }
@@ -83,7 +84,7 @@ class SearchEngineMainPageProvider
       .pipeTo(self)
 
     assumeStateWithTimeout(1 seconds,
-      handleHtmlResponse(sender),
+      handleHtmlResponse(System.currentTimeMillis(), sender),
       () => {
         sender ! SearchEngineMainPageError
       })

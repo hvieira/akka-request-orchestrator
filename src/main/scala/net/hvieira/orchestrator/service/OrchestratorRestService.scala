@@ -28,7 +28,7 @@ class OrchestratorRestService(implicit val system: ActorSystem,
 
   private val log = Logging(system, this)
 
-  private val transactionTimeoutDuration = 5 seconds
+  private val transactionTimeoutDuration = 3 seconds
   private val forkTimeoutDuration = 3 seconds
 
   val route =
@@ -59,11 +59,15 @@ class OrchestratorRestService(implicit val system: ActorSystem,
     // on completion terminate actor per request and children
     requestFuture.onComplete(result => actorPerRequest ! PoisonPill)(system.dispatcher)
 
+    val requestTimestamp = System.currentTimeMillis()
     onComplete(requestFuture) {
 
-      case Success(TransactionFlowResponse(data)) => complete(
-        HttpResponse(
-          entity = HttpEntity(ContentType(MediaTypes.`text/html`, HttpCharsets.`UTF-8`), data)))
+      case Success(TransactionFlowResponse(data)) => {
+        log.info(s"Transaction flow took ${System.currentTimeMillis() - requestTimestamp}")
+        complete(
+          HttpResponse(
+            entity = HttpEntity(ContentType(MediaTypes.`text/html`, HttpCharsets.`UTF-8`), data)))
+      }
 
       case Success(TransactionFlowError) => {
         log.error("Encountered an error during transaction!")
@@ -88,14 +92,19 @@ class OrchestratorRestService(implicit val system: ActorSystem,
     val actorPerRequest: ActorRef = ForkOrchestrator.createActor(system)
     val requestFuture = actorPerRequest ? ForkFlowRequest
 
+    val requestTimestamp = System.currentTimeMillis()
+
     // on completion terminate actor per request and children
     requestFuture.onComplete(result => actorPerRequest ! PoisonPill)(system.dispatcher)
 
     onComplete(requestFuture) {
 
-      case Success(ForkFlowResponse(result)) => complete(
-        HttpResponse(
-          entity = HttpEntity(ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`), result)))
+      case Success(ForkFlowResponse(result)) => {
+        log.info(s"Parallel flow took ${System.currentTimeMillis() - requestTimestamp}")
+        complete(
+          HttpResponse(
+            entity = HttpEntity(ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`), result)))
+      }
 
       case Failure(e) => {
         log.error(e, "Failure fulfilling request")

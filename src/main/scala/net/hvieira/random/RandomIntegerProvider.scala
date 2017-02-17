@@ -40,8 +40,9 @@ class RandomIntegerProvider
 
   val http = Http(context.system)
 
-  def waitingForHttpResponse(originalSender: ActorRef): State = {
+  def waitingForHttpResponse(requestTimestamp: Long, originalSender: ActorRef): State = {
     case HttpResponse(StatusCodes.OK, headers, entity, _) => {
+      log.info(s"Got random number! Took ${System.currentTimeMillis()-requestTimestamp}")
       entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
         originalSender ! RandomIntegerResponse(Integer.parseInt(body.utf8String.trim))
       }
@@ -73,7 +74,7 @@ class RandomIntegerProvider
 
     val originalSender = sender()
     assumeStateWithTimeout(2000 millis,
-      waitingForHttpResponse(originalSender),
+      waitingForHttpResponse(System.currentTimeMillis(), originalSender),
       () => {
         log.warning("Timeout while getting a random number")
         originalSender ! RandomIntegerError
