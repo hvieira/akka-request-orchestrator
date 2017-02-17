@@ -10,7 +10,6 @@ import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMain
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Success
 
 object ForkOrchestrator {
 
