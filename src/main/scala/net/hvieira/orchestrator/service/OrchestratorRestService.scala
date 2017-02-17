@@ -40,7 +40,7 @@ class OrchestratorRestService(implicit val system: ActorSystem,
           }
         }
       } ~
-        path("fork") {
+        path("parallel") {
           withRequestTimeout(forkTimeoutDuration) {
             get {
               handleWithForkMethod()

@@ -33,7 +33,7 @@ class OrchestratorRestServiceSpec
 
       implicit val explicitTimeout = RouteTestTimeout(3 seconds)
 
-      val request: HttpRequest = Get("/orchestrate/fork")
+      val request: HttpRequest = Get("/orchestrate/parallel")
       request ~> route ~> check {
         status shouldBe StatusCodes.OK
         handled shouldBe true
