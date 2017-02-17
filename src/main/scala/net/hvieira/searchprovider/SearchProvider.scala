@@ -1,6 +1,6 @@
 package net.hvieira.searchprovider
 
-protected object SearchProvider extends Enumeration {
+object SearchProvider extends Enumeration {
   type SearchProvider = Value
   val GOOGLE = Value(1)
   val DUCKDUCKGO = Value(2)

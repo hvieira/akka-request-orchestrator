@@ -17,7 +17,7 @@ class OrchestratorRestServiceSpec
 
   "The service" should {
 
-    "Orchestrate requests" in {
+    "orchestrate requests in as a transaction" in {
 
       implicit val explicitTimeout = RouteTestTimeout(5 seconds)
 
@@ -26,6 +26,18 @@ class OrchestratorRestServiceSpec
         status shouldBe StatusCodes.OK
         handled shouldBe true
         entityAs[String]  should include regex "Google|DuckDuckGo|Yahoo"
+      }
+    }
+
+    "orchestrate requests in parallel" in {
+
+      implicit val explicitTimeout = RouteTestTimeout(3 seconds)
+
+      val request: HttpRequest = Get("/orchestrate/fork")
+      request ~> route ~> check {
+        status shouldBe StatusCodes.OK
+        handled shouldBe true
+        entityAs[String]  should include regex "<title>Google<\\/title>|<title>DuckDuckGo<\\/title>|<title>Yahoo<\\/title>"
       }
     }
   }

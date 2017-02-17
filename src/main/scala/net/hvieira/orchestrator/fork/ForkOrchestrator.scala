@@ -5,7 +5,7 @@ import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import net.hvieira.actor.TimeoutableState
 import net.hvieira.orchestrator.fork.ForkOrchestrator.{ForkFlowError, ForkFlowRequest, ForkFlowResponse}
-import net.hvieira.searchprovider.SearchEngineMainPageProvider
+import net.hvieira.searchprovider.{SearchEngineMainPageProvider, SearchProvider}
 import net.hvieira.searchprovider.SearchEngineMainPageProvider.{SearchEngineMainPageError, SearchEngineMainPageRequest, SearchEngineMainPageResponse}
 
 import scala.concurrent.Future
@@ -32,7 +32,7 @@ class ForkOrchestrator
 
   override def preStart(): Unit = {
     // start child actors
-    1 to 3 foreach (_ => SearchEngineMainPageProvider.createChildActor(context))
+    SearchProvider.values.foreach(_ => SearchEngineMainPageProvider.createChildActor(context))
   }
 
   override def aroundPostStop(): Unit = {

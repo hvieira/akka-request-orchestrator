@@ -29,7 +29,7 @@ class OrchestratorRestService(implicit val system: ActorSystem,
   private val log = Logging(system, this)
 
   private val transactionTimeoutDuration = 5 seconds
-  private val forkTimeoutDuration = 5 seconds
+  private val forkTimeoutDuration = 3 seconds
 
   val route =
     pathPrefix("orchestrate") {
